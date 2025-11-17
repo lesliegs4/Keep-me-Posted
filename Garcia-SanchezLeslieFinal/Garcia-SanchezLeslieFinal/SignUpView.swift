@@ -8,9 +8,14 @@
 import SwiftUI
 
 struct SignUpView: View {
+    @EnvironmentObject var authVM: AuthViewModel
+    @Environment(\.dismiss) private var dismiss
+    
     @State private var fullName = ""
     @State private var email = ""
     @State private var password = ""
+    @State private var isLoading = false
+    @State private var errorMessage: String?
     
     var body: some View {
         
@@ -91,17 +96,33 @@ struct SignUpView: View {
         .padding(.horizontal, 32)
         .padding(.top, 20)
         
-        Button(action: {}) {
-            Text("Create Account")
-                .font(.system(size: 17, weight: .semibold))
-                .foregroundColor(.white)
-                .frame(maxWidth: .infinity)
-                .padding(.vertical, 16)
-                .background(
-                    RoundedRectangle(cornerRadius: 10)
-                        .fill(Color(red: 0.50, green: 0.69, blue: 0.73))
-                )
+        if let errorMessage = errorMessage {
+            Text(errorMessage)
+                .foregroundColor(.red)
+                .font(.system(size: 13))
+                .padding(.top, 8)
+                .padding(.horizontal, 32)
         }
+        
+        Button(action: createAccount) {
+            if isLoading {
+                ProgressView()
+                    .tint(.white)
+                    .frame(maxWidth: .infinity)
+                    .padding(.vertical, 16)
+            } else {
+                Text("Create Account")
+                    .font(.system(size: 17, weight: .semibold))
+                    .foregroundColor(.white)
+                    .frame(maxWidth: .infinity)
+                    .padding(.vertical, 16)
+                    
+            }
+        }
+        .background(
+            RoundedRectangle(cornerRadius: 10)
+                .fill(Color(red: 0.50, green: 0.69, blue: 0.73))
+        )
         .buttonStyle(.plain)
         .padding(.horizontal, 32)
         .padding(.top, 8)
@@ -112,8 +133,36 @@ struct SignUpView: View {
             .padding(.top, 16)
             .padding(.bottom, 40)
     }
+    
+    
+    private func createAccount() {
+        print("DEBUG: createAccount tapped")
+        print("DEBUG: fullName = \(fullName)")
+        print("DEBUG: email = \(email)")
+        print("DEBUG: password length = \(password.count)")
+        errorMessage = nil
+                
+        guard !fullName.isEmpty, !email.isEmpty, !password.isEmpty else {
+            errorMessage = "Please fill in all fields"
+            return
+        }
+        
+        isLoading = true
+        authVM.signUp(fullName: fullName, email: email, password: password) { error in
+            DispatchQueue.main.async {
+                isLoading = false
+                if let error = error {
+                    errorMessage = error.localizedDescription
+                } else {
+                    // sign up was sucessful
+                    dismiss()
+                }
+            }
+        }
+    }
 }
 
 #Preview {
     SignUpView()
+        .environmentObject(AuthViewModel())
 }

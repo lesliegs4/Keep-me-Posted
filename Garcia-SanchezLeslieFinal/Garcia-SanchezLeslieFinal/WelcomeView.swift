@@ -22,7 +22,7 @@ struct WelcomeView : View {
             .padding(.horizontal, 32)
             
             NavigationLink {
-                // SignInView()
+                SignInView()
             } label: {
                 Text("Sign In")
                     .padding()
@@ -33,10 +33,9 @@ struct WelcomeView : View {
             .padding(.top, 20)
             
             NavigationLink {
-                // SignUpView()
+                SignUpView()
             } label: {
                 Text("Sign Up")
-                    .underline()
                     .font(.subheadline)
                     .padding(.top, 16)
             }
@@ -48,4 +47,5 @@ struct WelcomeView : View {
 
 #Preview {
     WelcomeView()
+        .environmentObject(AuthViewModel())
 }
