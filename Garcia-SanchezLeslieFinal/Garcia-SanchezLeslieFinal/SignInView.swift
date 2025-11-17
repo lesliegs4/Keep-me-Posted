@@ -79,7 +79,7 @@ struct SignInView : View {
                 VStack {
                     Button(action: {}) {
                         HStack(spacing: 12) {
-                            Image(systemName: "g.circle")
+                            Image(systemName: "g.circle.fill")
                                 .font(.system(size: 20))
                                 .foregroundColor(.black)
                             Text("Continue with Google")
@@ -118,7 +118,19 @@ struct SignInView : View {
                 }
                 .padding(.horizontal, 40)
                 
-                
+                HStack(spacing: 4) {
+                    Spacer()
+                    Text("Don't have an account?")
+                        .font(.system(size: 13))
+                        .foregroundColor(.gray)
+                    
+                    Button(action: {}) {
+                        Text("Sign Up")
+                            .font(.system(size: 13, weight: .semibold))
+                            .foregroundColor(.gray)
+                    }
+                    Spacer()
+                }
             }
         }
     }
