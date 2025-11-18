@@ -7,9 +7,14 @@
 import SwiftUI
 
 struct SignInView : View {
+    @EnvironmentObject var authVM: AuthViewModel
+    @Environment(\.dismiss) private var dismiss
+    
     @State private var email = ""
     @State private var password = ""
     @State private var isPasswordVisible = false
+    @State private var errorMessage: String?
+    @State private var isLoading: Bool = false
     
     var body: some View {
         ScrollView {
@@ -45,31 +50,50 @@ struct SignInView : View {
                         .font(.system(size: 14, weight: .semibold))
                     
                     HStack {
-                        SecureField("Enter your password", text: $password)
-                            .font(.system(size: 15))
-                        
-                        Image(systemName: "eye")
-                            .font(.system(size: 16))
-                    }
-                    .padding()
-                    .background(
-                        RoundedRectangle(cornerRadius: 8)
-                            .stroke(Color.gray.opacity(0.3), lineWidth: 1)
-                    )
+                            if isPasswordVisible {
+                                TextField("Enter your password", text: $password)
+                                    .font(.system(size: 16))
+                                    .textInputAutocapitalization(.never)
+                                    .disableAutocorrection(true)
+                            } else {
+                                SecureField("Enter your password", text: $password)
+                                    .font(.system(size: 16))
+                            }
+                            
+                            Button(action: {
+                                isPasswordVisible.toggle()
+                            }) {
+                                Image(systemName: isPasswordVisible ? "eye.slash" : "eye")
+                                    .foregroundColor(.gray)
+                            }
+                        }
+                        .padding()
+                        .background(
+                            RoundedRectangle(cornerRadius: 8)
+                                .stroke(Color.gray.opacity(0.3), lineWidth: 1)
+                        )
+                    
                 }
                 .padding(.horizontal, 40)
                 
-                Button(action: {}) {
-                    Text("Sign In")
-                        .font(.system(size:16, weight: .semibold))
-                        .foregroundColor(.white)
-                        .frame(maxWidth: .infinity)
-                        .padding(.vertical, 14)
-                        .background(
-                            RoundedRectangle(cornerRadius: 8)
-                                .fill(Color(red: 0.50, green: 0.69, blue: 0.73))
-                        )
+                Button(action: signIn) {
+                    if isLoading {
+                        ProgressView()
+                            .tint(.white)
+                            .frame(maxWidth: .infinity)
+                            .padding(.vertical, 16)
+                    } else {
+                        Text("Sign In")
+                            .font(.system(size:16, weight: .semibold))
+                            .foregroundColor(.white)
+                            .frame(maxWidth: .infinity)
+                            .padding(.vertical, 14)
+                    }
                 }
+                .background(
+                    RoundedRectangle(cornerRadius: 8)
+                        .fill(Color(red: 0.50, green: 0.69, blue: 0.73))
+                )
                 .padding(.horizontal, 40)
                 
                 Text("or")
@@ -134,6 +158,31 @@ struct SignInView : View {
             }
         }
     }
+    
+    private func signIn() {
+            errorMessage = nil
+            
+            guard !email.isEmpty, !password.isEmpty else {
+                errorMessage = "Please enter email and password."
+                return
+            }
+            
+            isLoading = true
+            authVM.signIn(email: email, password: password) { error in
+                DispatchQueue.main.async {
+                    self.isLoading = false
+                    if let error = error {
+                        print("DEBUG: signIn returned error: \(error)")
+                        self.errorMessage = error.localizedDescription
+                    } else {
+                        print("DEBUG: signIn success, dismissing SignInView")
+                        // For now, just dismiss back to previous screen.
+                        // Later you can navigate to your main TabView.
+                        self.dismiss()
+                    }
+                }
+            }
+        }
 }
 
 #Preview {

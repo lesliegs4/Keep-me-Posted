@@ -80,6 +80,38 @@ class AuthViewModel: ObservableObject {
             completion(nil)
         }
     }
-
+    
+    func signIn(email: String,
+                password: String,
+                completion: @escaping (Error?) -> Void) {
+        
+        print("DEBUG: Starting sign in...")
+        print("DEBUG: email = \(email)")
+        print("DEBUG: password length = \(password.count)")
+        
+        Auth.auth().signIn(withEmail: email, password: password) { [weak self] result, error in
+            
+            if let error = error {
+                print("🔥 FIREBASE SIGN-IN ERROR:")
+                print("🔥 \(error.localizedDescription)")
+                print("🔥 Full error: \(error)")
+                completion(error)
+                return
+            }
+            
+            guard let user = result?.user else {
+                let err = NSError(domain: "AuthVM",
+                                  code: -1,
+                                  userInfo: [NSLocalizedDescriptionKey: "User is nil after sign in"])
+                print("🔥 SIGN-IN ERROR: \(err)")
+                completion(err)
+                return
+            }
+            
+            print("✅ Sign in successful. UID=\(user.uid), email=\(user.email ?? "nil")")
+            self?.currentUser = user
+            completion(nil)
+        }
+    }
 
 }

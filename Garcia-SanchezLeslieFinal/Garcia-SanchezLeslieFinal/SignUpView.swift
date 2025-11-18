@@ -87,7 +87,7 @@ struct SignUpView: View {
                         .stroke(Color(red: 0.80, green: 0.86, blue: 0.93), lineWidth: 1)
                 )
                 
-                Text("Password must be at least 8 characters, with one uppercase, one lowercase, one number, and one special character.")
+                Text("Password must be at least 6 characters, with one uppercase, one lowercase, one number, and one special character.")
                     .font(.system(size: 12))
                     .foregroundColor(.gray)
                     .fixedSize(horizontal: false, vertical: true)
