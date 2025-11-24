@@ -17,4 +17,4 @@ Meant for travelers and writers of any age. Mainly focused on targeting 15-40 ye
 3. Apple MapKit, native framework for providing map interface
 4. Contacts list: for the postcard sending and visible on the profile page
 
-[App Proposal (1).pdf](https://github.com/user-attachments/files/23701969/App.Proposal.1.pdf)
+[User Flow.pdf](https://github.com/user-attachments/files/23701969/App.Proposal.1.pdf)
