@@ -7,22 +7,107 @@
 
 import SwiftUI
 
+//
+//  HomeView.swift
+//  Garcia-SanchezLeslieFinal
+//
+//  Created by Leslie Garcia on 11/25/25.
+//
+
+import SwiftUI
+
+enum Tab {
+    case map
+    case journal
+    case profile // Technically a sheet, but part of the menu
+    case home
+}
+
 struct HomeView: View {
     @EnvironmentObject var authVM: AuthViewModel
     @Environment(\.dismiss) private var dismiss
     
     @State private var showProfile = false
+    // Track which tab is active. Default to home.
+    @State private var selectedTab: Tab = .home
     
     var body: some View {
-        VStack(spacing: 0) {
+        ZStack {
+            // Main Content Switcher
+            switch selectedTab {
+            case .home:
+                homeContent
+            case .map:
+                MapView() // This is your new MapView
+                    .environmentObject(authVM)
+            case .journal:
+                Text("Journal View Coming Soon") // Placeholder
+                    .frame(maxWidth: .infinity, maxHeight: .infinity)
+                    .background(Color.white)
+            case .profile:
+                // Profile is handled by sheet, so we keep the underlying view
+                homeContent
+            }
             
-            // Top bar with location + hamburger menu
+            // Bottom Tab Bar (Overlay)
+            VStack {
+                Spacer()
+                HStack {
+                    // MAP BUTTON
+                    Button { selectedTab = .map } label: {
+                        TabItem(icon: "map", label: "Map", isActive: selectedTab == .map)
+                    }
+                    
+                    // JOURNAL BUTTON
+                    Button { selectedTab = .journal } label: {
+                        TabItem(icon: "book", label: "Journal", isActive: selectedTab == .journal)
+                    }
+                    
+                    // PROFILE BUTTON
+                    Button(action: {
+                        showProfile = true
+                        // We don't change selectedTab here to keep context
+                    }) {
+                        VStack(spacing: 4) {
+                            Image(systemName: "person")
+                                .font(.system(size: 20))
+                                .foregroundColor(.gray)
+                            Text("Profile")
+                                .font(.caption)
+                                .foregroundColor(.gray)
+                        }
+                        .frame(maxWidth: .infinity)
+                    }
+                    
+                    // HOME BUTTON
+                    Button { selectedTab = .home } label: {
+                        TabItem(icon: "house", label: "Home", isActive: selectedTab == .home)
+                    }
+                }
+                .padding()
+                .background(Color.white)
+            }
+        }
+        .background(Color(.systemGroupedBackground))
+        .navigationBarBackButtonHidden(true)
+        .sheet(isPresented: $showProfile) {
+            ProfileView()
+                .environmentObject(authVM)
+        }
+        .onChange(of: authVM.currentUser) { user in
+            if user == nil { dismiss() }
+        }
+    }
+    
+    // Extracted your original Home content to keep the body clean
+    var homeContent: some View {
+        VStack(spacing: 0) {
+            // Top bar
             HStack {
                 Spacer()
                 Text(authVM.locationDisplayName)
                     .font(.headline)
                 Spacer()
-                
                 Image(systemName: "line.horizontal.3")
                     .font(.title3)
                     .padding(.trailing, 16)
@@ -30,92 +115,41 @@ struct HomeView: View {
             .padding(.top, 20)
             .padding(.bottom, 12)
             
-            
             ScrollView(showsIndicators: false) {
-                
                 VStack(alignment: .leading, spacing: 24) {
-                    Spacer()
-                    // Create Postcard Button
+                    Spacer().frame(height: 20)
                     Button(action: {}) {
                         VStack(spacing: 12) {
                             Image(systemName: "envelope")
                                 .font(.system(size: 36))
                                 .foregroundColor(.white)
-                            
                             Text("Create a Postcard")
                                 .font(.title3.bold())
                                 .foregroundColor(.white)
                         }
                         .frame(maxWidth: .infinity)
                         .padding(.vertical, 40)
-                        .background(Color(red: 0.28, green: 0.63, blue: 0.69))
-                        .cornerRadius(12)
+                        .background(RoundedRectangle(cornerRadius: 12).fill(Color(red: 0.50, green: 0.69, blue: 0.73)))
                         .padding(.horizontal, 24)
                     }
                     
-                    // Recent activity section
-                    VStack(alignment: .leading, spacing: 12) {
-                        Text("Recent Activity")
-                            .font(.headline)
-                            .padding(.horizontal, 24)
-                        
-                        ActivityRow(title: "Postcard to Mom - Paris",
-                                    time: "Yesterday")
-                        
-                        ActivityRow(title: "Journal Entry - Eiffel Tower",
-                                    time: "2 days ago")
+                    Text("Recent Activity")
+                        .font(.title2.bold())
+                        .padding(.horizontal, 24)
+                    
+                    VStack(spacing: 16) {
+                        ActivityRow(title: "Journal Entry - Eiffel Tower", time: "2 days ago")
+                        ActivityRow(title: "Postcard Sent - Tokyo", time: "5 days ago")
                     }
                 }
                 .padding(.top, 20)
-            }
-            
-            Spacer()
-            
-            // Bottom Tab Bar
-            HStack {
-                TabItem(icon: "map", label: "Map")
-                TabItem(icon: "book", label: "Journal")
-                
-                // Profile Tab - Triggers Sheet
-                Button(action: {
-                    showProfile = true
-                }) {
-                    VStack(spacing: 4) {
-                        Image(systemName: "person")
-                            .font(.system(size: 20))
-                            .foregroundColor(.gray)
-
-                        Text("Profile")
-                            .font(.caption)
-                            .foregroundColor(.gray)
-                    }
-                    .frame(maxWidth: .infinity)
-                }
-                
-                TabItem(icon: "house", label: "Home", isActive: true)
-            }
-            .padding()
-            .background(Color.white)
-        }
-        .background(Color(.systemGroupedBackground))
-        .navigationBarBackButtonHidden(true)
-        
-        // Present ProfileView
-        .sheet(isPresented: $showProfile) {
-            ProfileView()
-                .environmentObject(authVM)
-        }
-                    
-            // Listen for Logout: If user becomes nil, dismiss HomeView -> returns to SignInView
-            .onChange(of: authVM.currentUser) { user in
-                if user == nil {
-                    dismiss()
-                }
+                .padding(.bottom, 100) // Extra padding for Tab Bar
             }
         }
     }
+}
 
-    // Helper Subviews
+    // MARK: Helper Subviews
     struct ActivityRow: View {
         var title: String
         var time: String
@@ -154,7 +188,6 @@ struct HomeView: View {
             .frame(maxWidth: .infinity)
         }
     }
-
 
 #Preview {
     HomeView()

@@ -21,6 +21,10 @@ class AuthViewModel: ObservableObject {
     
     @Published var userFullName: String = ""
     
+    var userId: String? {
+        return currentUser?.uid
+    }
+    
     init() {
         self.currentUser = Auth.auth().currentUser
         // If user is already logged in, fetch their data immediately
