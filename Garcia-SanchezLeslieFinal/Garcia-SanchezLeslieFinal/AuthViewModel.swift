@@ -10,104 +10,122 @@ import SwiftUI
 import FirebaseAuth
 import FirebaseFirestore
 import Combine
+import CoreLocation
 
 class AuthViewModel: ObservableObject {
-    @Published var currentUser: User?   // FirebaseAuth.User
-    let db = Firestore.firestore()
+    @Published var currentUser: User?
+    private let db = Firestore.firestore()
+    
+    @Published var locationDisplayName: String = "Cupertino, California"
+    @Published var locationCoordinate: CLLocationCoordinate2D?
+    
+    @Published var userFullName: String = ""
     
     init() {
         self.currentUser = Auth.auth().currentUser
+        // If user is already logged in, fetch their data immediately
+        if currentUser != nil {
+            fetchUserData()
+        }
     }
     
-    func signUp(fullName: String,
-                email: String,
-                password: String,
-                completion: @escaping (Error?) -> Void) {
-        
-//        print("Starting sign up...")
-//        print("Email = \(email)")
-//        print("Password length = \(password.count)")
-        
+    func signUp(fullName: String, email: String, password: String, completion: @escaping (Error?) -> Void) {
         Auth.auth().createUser(withEmail: email, password: password) { [weak self] result, error in
-            
             if let error = error {
-                print("Firebase Auth Error:")
-                print("\(error.localizedDescription)")
-                print("Error info: \(error)")
-                
                 completion(error)
                 return
             }
+            guard let user = result?.user else { return }
+            self?.currentUser = user
             
-            guard let user = result?.user else {
-                print("Error: Firebase returned nil user")
-                completion(NSError(domain: "AuthVM", code: -1, userInfo: [NSLocalizedDescriptionKey: "User is nil"]))
-                return
-            }
-            
-//            print("Firebase Auth created user:")
-//            print("   UID: \(user.uid)")
-//            print("   Email: \(user.email ?? "nil")")
-            
-            // Set display name
-            let changeRequest = user.createProfileChangeRequest()
-            changeRequest.displayName = fullName
-            changeRequest.commitChanges { err in
-                if let err = err {
-                    print("Display name error: \(err.localizedDescription)")
-                } else {
-                    print("Display name saved.")
-                }
-            }
-            
-            // Save user to Firestore
+            // Create user document in Firestore
             let data: [String: Any] = [
-                "fullName": fullName,
+                "uid": user.uid,
                 "email": email,
-                "createdAt": Timestamp()
+                "fullName": fullName,
+                "dateCreated": Timestamp()
             ]
             
-            print("Writing user to Firestore...")
-            
-            self?.db.collection("users").document(user.uid).setData(data) { err in
-                if let err = err {
-                    print("Firebase error: \(err.localizedDescription)")
-                } else {
-                    print("Firestore write successful.")
-                }
+            self?.db.collection("users").document(user.uid).setData(data) { _ in
+                completion(nil)
             }
+        }
+    }
+    
+    func signIn(email: String, password: String, completion: @escaping (Error?) -> Void) {
+        Auth.auth().signIn(withEmail: email, password: password) { [weak self] result, error in
+            if let error = error {
+                completion(error)
+                return
+            }
+            self?.currentUser = result?.user
+            self?.fetchUserData()
             
             completion(nil)
         }
     }
     
-    func signIn(email: String,
-                password: String,
-                completion: @escaping (Error?) -> Void) {
-                
-        Auth.auth().signIn(withEmail: email, password: password) { [weak self] result, error in
-            
+    func signOut() {
+        try? Auth.auth().signOut()
+        self.currentUser = nil
+        self.locationDisplayName = "Cupertino, California" // Reset to default
+        self.locationCoordinate = nil
+    }
+    
+    func saveLocation(name: String, coordinate: CLLocationCoordinate2D?) {
+        guard let uid = currentUser?.uid else { return }
+        
+        // 1. Update Local State
+        self.locationDisplayName = name
+        self.locationCoordinate = coordinate
+        
+        // 2. Prepare Data for Firestore
+        var data: [String: Any] = [
+            "locationName": name
+        ]
+        
+        if let coord = coordinate {
+            data["locationLat"] = coord.latitude
+            data["locationLng"] = coord.longitude
+        }
+        
+        // 3. Write to Firestore
+        db.collection("users").document(uid).updateData(data) { error in
             if let error = error {
-                print("Firebase sign in error:")
-                print("\(error.localizedDescription)")
-                print("Full error: \(error)")
-                completion(error)
-                return
+                print("Error saving location: \(error.localizedDescription)")
+            } else {
+                print("Location saved successfully to Firestore.")
             }
-            
-            guard let user = result?.user else {
-                let err = NSError(domain: "AuthVM",
-                                  code: -1,
-                                  userInfo: [NSLocalizedDescriptionKey: "User is nil after sign in"])
-                print("Sign in error: \(err)")
-                completion(err)
-                return
-            }
-            
-            // print("Sign in successful. UID=\(user.uid), email=\(user.email ?? "nil")")
-            self?.currentUser = user
-            completion(nil)
         }
     }
-
+    
+    func fetchUserData() {
+        guard let uid = currentUser?.uid else { return }
+        
+        db.collection("users").document(uid).getDocument { [weak self] snapshot, error in
+            guard let self = self, let data = snapshot?.data(), error == nil else { return }
+            
+            // Fetch Full Name
+            if let fullName = data["fullName"] as? String {
+                DispatchQueue.main.async {
+                    self.userFullName = fullName
+                }
+            }
+            
+            // Fetch Location Name
+            if let name = data["locationName"] as? String {
+                DispatchQueue.main.async {
+                    self.locationDisplayName = name
+                }
+            }
+            
+            // Fetch Coordinates
+            if let lat = data["locationLat"] as? Double,
+               let lng = data["locationLng"] as? Double {
+                DispatchQueue.main.async {
+                    self.locationCoordinate = CLLocationCoordinate2D(latitude: lat, longitude: lng)
+                }
+            }
+        }
+    }
 }

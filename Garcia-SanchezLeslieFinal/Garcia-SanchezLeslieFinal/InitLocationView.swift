@@ -19,14 +19,19 @@ struct InitLocationView : View {
     @StateObject private var locationManager = LocationManager()
     
     @Environment(\.dismiss) var dismiss
+    @EnvironmentObject var authVM: AuthViewModel
+    
+    @State private var navigateToHome = false
+    @State private var isLoadingLocation = false
     
     var body : some View {
-//        Color.white.ignoresSafeArea()
         
         VStack(spacing: 24) {
             ZStack {
                 HStack {
-                    NavigationLink(destination: SignInView()) {
+                    Button(action: {
+                        dismiss()
+                    }) {
                         HStack(spacing: 4) {
                             Image(systemName: "chevron.left")
                             Text("Back")
@@ -37,12 +42,15 @@ struct InitLocationView : View {
                 
                     Spacer()
                     
-                    NavigationLink(destination: HomeView()) {
+                    Button(action: {
+                        authVM.locationDisplayName = "Cupertino, California"
+                        authVM.locationCoordinate = nil
+                        navigateToHome = true
+                    }) {
                         Text("Skip")
                             .font(.system(size: 14, weight: .medium))
                             .foregroundColor(Color.gray)
                     }
-
                 }
                 
                 VStack(spacing: 2) {
@@ -81,55 +89,35 @@ struct InitLocationView : View {
         }
         
         ZStack(alignment: .top) {
-            // map
-            Map(coordinateRegion: $region)
-                .clipShape(RoundedRectangle(cornerRadius: 8))
+            Map(coordinateRegion: $region).clipShape(RoundedRectangle(cornerRadius: 8))
             
             if !searchVM.suggestions.isEmpty {
-//                let rowHeight: CGFloat = 56
-//                let totalHeight = CGFloat(searchVM.suggestions.count) * rowHeight
-                
                 ScrollView {
                     VStack(alignment: .leading, spacing: 0) {
                         ForEach(searchVM.suggestions.indices, id: \.self) { index in
                             let suggestion = searchVM.suggestions[index]
-                            
                             Button {
                                 searchVM.selectLocation(suggestion) { newRegion in
-                                    if let region = newRegion {
-                                        self.region = region
-                                    }
+                                    if let region = newRegion { self.region = region }
                                 }
-                                
-                                // Fill the field with the chosen address
-                                searchVM.searchQuery = suggestion.title + " " + suggestion.subtitle
-                                
-                                // Hide the list
+                                // Use the title as the location name
+                                searchVM.searchQuery = suggestion.title
                                 searchVM.suggestions = []
                             } label: {
                                 VStack(alignment: .leading) {
-                                    Text(suggestion.title)
-                                        .font(.system(size: 14, weight: .medium))
-                                        .foregroundColor(.primary)
-                                    Text(suggestion.subtitle)
-                                        .font(.system(size: 12))
-                                        .foregroundColor(.gray)
+                                    Text(suggestion.title).font(.system(size: 14, weight: .medium)).foregroundColor(.primary)
+                                    Text(suggestion.subtitle).font(.system(size: 12)).foregroundColor(.gray)
                                 }
                                 .padding(.vertical, 8)
                                 .padding(.horizontal, 16)
                             }
-                            
-                            if index != searchVM.suggestions.indices.last {
-                                Divider()
-                            }
+                            if index != searchVM.suggestions.indices.last { Divider() }
                         }
                     }
                 }
-                .frame(
-                    maxHeight: min(CGFloat(searchVM.suggestions.count) * 56, 250)
-                )
+                .frame(maxHeight: 250)
                 .background(Color.white)
-                .clipShape(RoundedRectangle(cornerRadius: 10))
+                .cornerRadius(10)
                 .shadow(radius: 3)
                 .padding(.horizontal, 32)
                 .padding(.top, 12)
@@ -139,48 +127,84 @@ struct InitLocationView : View {
     
         
         VStack(spacing: 12) {
-            Button(action: {
-                let coord = searchVM.selectedCoordinate ?? region.center
-                dismiss()
-            }) {
-                Text("Confirm Location")
-                    .font(.system(size: 16, weight: .semibold))
-                    .foregroundColor(.white)
-                    .frame(maxWidth: .infinity)
-                    .padding(.vertical, 14)
-                    .background(
-                        RoundedRectangle(cornerRadius: 10)
-                            .fill(Color(red: 0.50, green: 0.69, blue: 0.73))
-                    )
-            }
-            
-            Button(action: {
-                locationManager.requestCurrentLocation()
-            }) {
-                Text("Use My Current Location")
-                    .font(.system(size: 15, weight: .semibold))
-                    .foregroundColor(Color(red: 0.28, green: 0.63, blue: 0.69))
-                    .frame(maxWidth: .infinity)
-                    .padding(.vertical, 12)
+                    // Confirm Location
+                    Button(action: {
+                        let coord = searchVM.selectedCoordinate ?? region.center
+                        // Use search query as name, or a fallback
+                        let name = searchVM.searchQuery.isEmpty ? "Selected Location" : searchVM.searchQuery
+                        
+                        authVM.saveLocation(name: name, coordinate: coord)
+                        navigateToHome = true
+                    }) {
+                        Text("Confirm Location")
+                            .font(.system(size: 16, weight: .semibold))
+                            .foregroundColor(.white)
+                            .frame(maxWidth: .infinity)
+                            .padding(.vertical, 14)
+                            .background(RoundedRectangle(cornerRadius: 10).fill(Color(red: 0.50, green: 0.69, blue: 0.73)))
+                    }
+                    
+                    // Use Current Location
+                    Button(action: {
+                        locationManager.requestCurrentLocation()
+                        // The actual logic triggers in .onReceive below
+                    }) {
+                        if isLoadingLocation {
+                            ProgressView()
+                        } else {
+                            Text("Use My Current Location")
+                                .font(.system(size: 15, weight: .semibold))
+                                .foregroundColor(Color(red: 0.28, green: 0.63, blue: 0.69))
+                                .frame(maxWidth: .infinity)
+                                .padding(.vertical, 12)
+                        }
+                    }
                     .background(
                         RoundedRectangle(cornerRadius: 10)
                             .stroke(Color(red: 0.28, green: 0.63, blue: 0.69), lineWidth: 1)
-                            .background(
-                                RoundedRectangle(cornerRadius: 10)
-                                    .fill(Color.white)
-                            )
                     )
-            }
-
-        }
-        .padding(.horizontal, 24)
-        .ignoresSafeArea(.keyboard)
-        .onReceive(locationManager.$currentCoordinate.compactMap { $0 }) { coord in
-            region.center = coord
-            searchVM.selectedCoordinate = coord   // <— so Confirm uses this
-        }
+                }
+                .padding(.horizontal, 24)
+                .padding(.bottom, 20)
         
         Spacer()
+        
+        // Listener for Current Location
+        .onReceive(locationManager.$currentCoordinate.compactMap { $0 }) { coord in
+            // Stop repeated updates if we are already processing
+            guard !isLoadingLocation else { return }
+            isLoadingLocation = true
+            
+            region.center = coord
+            
+            // Reverse Geocode
+            let geocoder = CLGeocoder()
+            let location = CLLocation(latitude: coord.latitude, longitude: coord.longitude)
+            
+            geocoder.reverseGeocodeLocation(location) { placemarks, error in
+                isLoadingLocation = false
+                
+                if let place = placemarks?.first {
+                    // Format: "Los Angeles, CA"
+                    let city = place.locality ?? ""
+                    let state = place.administrativeArea ?? ""
+                    let displayName = city.isEmpty ? "Current Location" : "\(city), \(state)"
+                    
+                    authVM.saveLocation(name: displayName, coordinate: coord)
+                    navigateToHome = true
+                } else {
+                    // Fallback if geocoding fails
+                    authVM.saveLocation(name: "Current Location", coordinate: coord)
+                    navigateToHome = true
+                }
+            }
+        }
+        
+        .navigationDestination(isPresented: $navigateToHome) {
+            HomeView()
+                .environmentObject(authVM)
+                .navigationBarBackButtonHidden(true)
+        }
     }
 
 }

@@ -8,14 +8,18 @@
 import SwiftUI
 
 struct HomeView: View {
+    @EnvironmentObject var authVM: AuthViewModel
+    @Environment(\.dismiss) private var dismiss
+    
+    @State private var showProfile = false
+    
     var body: some View {
         VStack(spacing: 0) {
             
             // Top bar with location + hamburger menu
-            
             HStack {
                 Spacer()
-                Text("Paris, France")
+                Text(authVM.locationDisplayName)
                     .font(.headline)
                 Spacer()
                 
@@ -71,53 +75,86 @@ struct HomeView: View {
             HStack {
                 TabItem(icon: "map", label: "Map")
                 TabItem(icon: "book", label: "Journal")
-                TabItem(icon: "person", label: "Profile")
-                TabItem(icon: "house", label: "Home") // stays visible
+                
+                // Profile Tab - Triggers Sheet
+                Button(action: {
+                    showProfile = true
+                }) {
+                    VStack(spacing: 4) {
+                        Image(systemName: "person")
+                            .font(.system(size: 20))
+                            .foregroundColor(.gray)
+
+                        Text("Profile")
+                            .font(.caption)
+                            .foregroundColor(.gray)
+                    }
+                    .frame(maxWidth: .infinity)
+                }
+                
+                TabItem(icon: "house", label: "Home", isActive: true)
             }
             .padding()
             .background(Color.white)
         }
         .background(Color(.systemGroupedBackground))
-    }
-}
-
-struct ActivityRow: View {
-    var title: String
-    var time: String
-    
-    var body: some View {
-        HStack {
-            Text(title)
-                .foregroundColor(.black)
-            Spacer()
-            Text(time)
-                .foregroundColor(.gray)
+        .navigationBarBackButtonHidden(true)
+        
+        // Present ProfileView
+        .sheet(isPresented: $showProfile) {
+            ProfileView()
+                .environmentObject(authVM)
         }
-        .padding()
-        .background(Color.white)
-        .cornerRadius(10)
-        .padding(.horizontal, 24)
-    }
-}
-
-struct TabItem: View {
-    var icon: String
-    var label: String
-    var isActive: Bool = false
-    
-    var body: some View {
-        VStack(spacing: 4) {
-            Image(systemName: icon)
-                .font(.system(size: 20))
-                .foregroundColor(.gray)
-
-            Text(label)
-                .font(.caption)
-                .foregroundColor(.gray)
+                    
+            // Listen for Logout: If user becomes nil, dismiss HomeView -> returns to SignInView
+            .onChange(of: authVM.currentUser) { user in
+                if user == nil {
+                    dismiss()
+                }
+            }
         }
-        .frame(maxWidth: .infinity)
     }
-}
+
+    // Helper Subviews
+    struct ActivityRow: View {
+        var title: String
+        var time: String
+        
+        var body: some View {
+            HStack {
+                Text(title)
+                    .foregroundColor(.black)
+                Spacer()
+                Text(time)
+                    .foregroundColor(.gray)
+            }
+            .padding()
+            .background(Color.white)
+            .cornerRadius(10)
+            .padding(.horizontal, 24)
+            .shadow(color: .black.opacity(0.05), radius: 2, x: 0, y: 1)
+        }
+    }
+
+    struct TabItem: View {
+        var icon: String
+        var label: String
+        var isActive: Bool = false
+        
+        var body: some View {
+            VStack(spacing: 4) {
+                Image(systemName: isActive ? icon + ".fill" : icon)
+                    .font(.system(size: 20))
+                    .foregroundColor(isActive ? Color(red: 0.50, green: 0.69, blue: 0.73) : .gray)
+
+                Text(label)
+                    .font(.caption)
+                    .foregroundColor(isActive ? Color(red: 0.50, green: 0.69, blue: 0.73) : .gray)
+            }
+            .frame(maxWidth: .infinity)
+        }
+    }
+
 
 #Preview {
     HomeView()
