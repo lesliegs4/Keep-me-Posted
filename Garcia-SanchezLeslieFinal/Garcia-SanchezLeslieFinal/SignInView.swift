@@ -105,7 +105,21 @@ struct SignInView : View {
                     .foregroundColor(.gray)
                 
                 VStack {
-                    Button(action: {}) {
+                    // Sign in with Google Button
+                    Button(action: {
+                        isLoading = true
+                            authVM.signInWithGoogle { error in
+                                DispatchQueue.main.async {
+                                    isLoading = false
+                                    if let error = error {
+                                        errorMessage = error.localizedDescription
+                                    } else {
+                                        // Success: Navigate to Home
+                                        navigateToHome = true
+                                    }
+                                }
+                            }
+                    }) {
                         HStack(spacing: 12) {
                             Image(systemName: "g.circle.fill")
                                 .font(.system(size: 20))
@@ -186,8 +200,7 @@ struct SignInView : View {
                         self.errorMessage = error.localizedDescription
                     } else {
                         print("DEBUG: signIn success, dismissing SignInView")
-                        // For now, just dismiss back to previous screen.
-                        // Later you can navigate to your main TabView.
+                        // Go to home after signing in
                         self.navigateToHome = true
                     }
                 }

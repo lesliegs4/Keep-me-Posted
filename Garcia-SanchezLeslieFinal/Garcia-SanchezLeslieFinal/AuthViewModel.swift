@@ -11,6 +11,20 @@ import FirebaseAuth
 import FirebaseFirestore
 import Combine
 import CoreLocation
+import GoogleSignIn
+
+struct UserActivity: Identifiable {
+    let id = UUID()
+    let title: String
+    let date: Date
+    
+    // Helper to format time as "X days ago" or "Just now"
+    var timeAgo: String {
+        let formatter = RelativeDateTimeFormatter()
+        formatter.unitsStyle = .full
+        return formatter.localizedString(for: date, relativeTo: Date())
+    }
+}
 
 class AuthViewModel: ObservableObject {
     @Published var currentUser: User?
@@ -18,6 +32,7 @@ class AuthViewModel: ObservableObject {
     
     @Published var locationDisplayName: String = "Cupertino, California"
     @Published var locationCoordinate: CLLocationCoordinate2D?
+    @Published var recentActivities: [UserActivity] = []
     
     @Published var userFullName: String = ""
     
@@ -66,6 +81,64 @@ class AuthViewModel: ObservableObject {
             self?.fetchUserData()
             
             completion(nil)
+        }
+    }
+    
+    func signInWithGoogle(completion: @escaping (Error?) -> Void) {
+        // 1. Get the root view controller to present the Google popup
+        guard let windowScene = UIApplication.shared.connectedScenes.first as? UIWindowScene,
+              let rootViewController = windowScene.windows.first?.rootViewController else {
+            return
+        }
+        
+        // 2. Start the Google Sign-In flow
+        GIDSignIn.sharedInstance.signIn(withPresenting: rootViewController) { [weak self] result, error in
+            if let error = error {
+                completion(error)
+                return
+            }
+            
+            guard let user = result?.user,
+                  let idToken = user.idToken?.tokenString else {
+                return
+            }
+            
+            let accessToken = user.accessToken.tokenString
+            
+            // 3. Create Firebase Credential
+            let credential = GoogleAuthProvider.credential(withIDToken: idToken,
+                                                           accessToken: accessToken)
+            
+            // 4. Sign in to Firebase with that credential
+            Auth.auth().signIn(with: credential) { authResult, error in
+                if let error = error {
+                    completion(error)
+                    return
+                }
+                
+                guard let firebaseUser = authResult?.user else { return }
+                self?.currentUser = firebaseUser
+                
+                // 5. Check if we need to create a Firestore doc for this user
+                // (Useful if it's their first time logging in with Google)
+                let userRef = self?.db.collection("users").document(firebaseUser.uid)
+                userRef?.getDocument { snapshot, _ in
+                    if let snapshot = snapshot, !snapshot.exists {
+                        // Create new user entry
+                        let data: [String: Any] = [
+                            "uid": firebaseUser.uid,
+                            "email": firebaseUser.email ?? "",
+                            "fullName": user.profile?.name ?? "Google User",
+                            "dateCreated": Timestamp()
+                        ]
+                        userRef?.setData(data)
+                    }
+                    
+                    // Fetch existing data (like saved location)
+                    self?.fetchUserData()
+                    completion(nil)
+                }
+            }
         }
     }
     
@@ -132,4 +205,10 @@ class AuthViewModel: ObservableObject {
             }
         }
     }
+    
+    func addActivity(title: String) {
+            let newActivity = UserActivity(title: title, date: Date())
+            // Insert at the top of the list
+            recentActivities.insert(newActivity, at: 0)
+        }
 }

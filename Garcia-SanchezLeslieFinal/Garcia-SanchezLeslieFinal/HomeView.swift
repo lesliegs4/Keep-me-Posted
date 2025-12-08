@@ -7,15 +7,6 @@
 
 import SwiftUI
 
-//
-//  HomeView.swift
-//  Garcia-SanchezLeslieFinal
-//
-//  Created by Leslie Garcia on 11/25/25.
-//
-
-import SwiftUI
-
 enum Tab {
     case map
     case journal
@@ -28,6 +19,7 @@ struct HomeView: View {
     @Environment(\.dismiss) private var dismiss
     
     @State private var showProfile = false
+    @State private var showCreatePostcard = false
     // Track which tab is active. Default to home.
     @State private var selectedTab: Tab = .home
     
@@ -95,7 +87,13 @@ struct HomeView: View {
                 .environmentObject(authVM)
         }
         .onChange(of: authVM.currentUser) { user in
-            if user == nil { dismiss() }
+            if user == nil {
+                dismiss()
+            }
+        }
+        .navigationDestination(isPresented: $showCreatePostcard) {
+            CreatePostcardView()
+                .environmentObject(authVM)
         }
     }
     
@@ -118,7 +116,9 @@ struct HomeView: View {
             ScrollView(showsIndicators: false) {
                 VStack(alignment: .leading, spacing: 24) {
                     Spacer().frame(height: 20)
-                    Button(action: {}) {
+                    Button(action: {
+                        showCreatePostcard = true
+                    }) {
                         VStack(spacing: 12) {
                             Image(systemName: "envelope")
                                 .font(.system(size: 36))
@@ -136,11 +136,13 @@ struct HomeView: View {
                     Text("Recent Activity")
                         .font(.title2.bold())
                         .padding(.horizontal, 24)
-                    
+
                     VStack(spacing: 16) {
-                        ActivityRow(title: "Journal Entry - Eiffel Tower", time: "2 days ago")
-                        ActivityRow(title: "Postcard Sent - Tokyo", time: "5 days ago")
+                        ForEach(authVM.recentActivities) { activity in
+                            ActivityRow(title: activity.title, time: activity.timeAgo)
+                        }
                     }
+                    .padding(.bottom, 100)
                 }
                 .padding(.top, 20)
                 .padding(.bottom, 100) // Extra padding for Tab Bar

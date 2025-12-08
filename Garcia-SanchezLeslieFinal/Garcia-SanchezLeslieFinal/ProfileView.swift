@@ -104,21 +104,15 @@ struct ProfileView: View {
                 
                 // --- Logout Button ---
                 Button(action: {
-                    // 1. Sign out from Firebase
                     authVM.signOut()
-                    
-                    // 2. Dismiss this ProfileView sheet
                     dismiss()
-                    
-                    // Note: HomeView's .onChange will see the user is nil
-                    // and dismiss itself, taking the user back to SignInView.
                 }) {
                     Text("Log Out")
                         .font(.system(size: 16, weight: .semibold))
                         .foregroundColor(.white)
                         .frame(maxWidth: .infinity)
                         .padding(.vertical, 16)
-                        .background(Color.red.opacity(0.8))
+                        .background(Color(red: 0.50, green: 0.69, blue: 0.73))
                         .cornerRadius(12)
                         .padding(.horizontal, 24)
                         .padding(.bottom, 20)
