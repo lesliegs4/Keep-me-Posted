@@ -20,10 +20,9 @@ struct HomeView: View {
     
     @State private var showProfile = false
     @State private var showCreatePostcard = false
-    // Track which tab is active. Default to home.
-    @State private var selectedTab: Tab = .home
+    @State private var selectedTab: Tab = .home // active tab defaults to home
     
-    var body: some View {
+    var body: some View { // note this is it's own view
         ZStack {
             // Main Content Switcher
             switch selectedTab {
@@ -41,7 +40,7 @@ struct HomeView: View {
                 homeContent
             }
             
-            // Bottom Tab Bar (Overlay)
+            // MARK: Bottom Tab Bar
             VStack {
                 Spacer()
                 HStack {
@@ -97,7 +96,7 @@ struct HomeView: View {
         }
     }
     
-    // Extracted your original Home content to keep the body clean
+    // MARK: Home Display
     var homeContent: some View {
         VStack(spacing: 0) {
             // Top bar
@@ -112,7 +111,7 @@ struct HomeView: View {
             }
             .padding(.top, 20)
             .padding(.bottom, 12)
-            
+            // MARK: Create Postcard
             ScrollView(showsIndicators: false) {
                 VStack(alignment: .leading, spacing: 24) {
                     Spacer().frame(height: 20)
@@ -133,6 +132,7 @@ struct HomeView: View {
                         .padding(.horizontal, 24)
                     }
                     
+                    // MARK: Recent Activity
                     Text("Recent Activity")
                         .font(.title2.bold())
                         .padding(.horizontal, 24)
@@ -145,7 +145,7 @@ struct HomeView: View {
                     .padding(.bottom, 100)
                 }
                 .padding(.top, 20)
-                .padding(.bottom, 100) // Extra padding for Tab Bar
+                .padding(.bottom, 100)
             }
         }
     }
@@ -172,6 +172,7 @@ struct HomeView: View {
         }
     }
 
+    // MARK: Tab View
     struct TabItem: View {
         var icon: String
         var label: String

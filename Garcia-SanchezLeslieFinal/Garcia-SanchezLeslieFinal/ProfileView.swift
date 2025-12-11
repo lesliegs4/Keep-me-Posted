@@ -21,7 +21,7 @@ struct ProfileView: View {
         NavigationStack {
             VStack(spacing: 0) {
                 
-                // --- Header Profile Info ---
+                // MARK: Profile Information
                 VStack(spacing: 16) {
                     // Avatar Placeholder
                     Circle()
@@ -37,7 +37,7 @@ struct ProfileView: View {
                     
                     // User Info
                     VStack(spacing: 4) {
-                        Text(authVM.userFullName.isEmpty ? "Traveler" : authVM.userFullName)
+                        Text(!authVM.userFullName.isEmpty ? authVM.userFullName : (authVM.currentUser?.email ?? "Traveler"))
                             .font(.title2.bold())
                         
                         Text(authVM.currentUser?.email ?? "No Email")
@@ -49,7 +49,7 @@ struct ProfileView: View {
                 
                 Divider()
                 
-                // --- Contacts List ---
+                // MARK: Contacts List
                 VStack(alignment: .leading) {
                     Text("Contacts")
                         .font(.headline)

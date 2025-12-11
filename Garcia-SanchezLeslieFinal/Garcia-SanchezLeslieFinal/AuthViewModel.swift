@@ -18,8 +18,7 @@ struct UserActivity: Identifiable {
     let title: String
     let date: Date
     
-    // Helper to format time as "X days ago" or "Just now"
-    var timeAgo: String {
+    var timeAgo: String { // This formatts the time
         let formatter = RelativeDateTimeFormatter()
         formatter.unitsStyle = .full
         return formatter.localizedString(for: date, relativeTo: Date())
@@ -42,7 +41,6 @@ class AuthViewModel: ObservableObject {
     
     init() {
         self.currentUser = Auth.auth().currentUser
-        // If user is already logged in, fetch their data immediately
         if currentUser != nil {
             fetchUserData()
         }
@@ -56,6 +54,7 @@ class AuthViewModel: ObservableObject {
             }
             guard let user = result?.user else { return }
             self?.currentUser = user
+            self?.userFullName = fullName
             
             // Create user document in Firestore
             let data: [String: Any] = [
@@ -85,13 +84,11 @@ class AuthViewModel: ObservableObject {
     }
     
     func signInWithGoogle(completion: @escaping (Error?) -> Void) {
-        // 1. Get the root view controller to present the Google popup
         guard let windowScene = UIApplication.shared.connectedScenes.first as? UIWindowScene,
               let rootViewController = windowScene.windows.first?.rootViewController else {
             return
         }
         
-        // 2. Start the Google Sign-In flow
         GIDSignIn.sharedInstance.signIn(withPresenting: rootViewController) { [weak self] result, error in
             if let error = error {
                 completion(error)
@@ -104,12 +101,10 @@ class AuthViewModel: ObservableObject {
             }
             
             let accessToken = user.accessToken.tokenString
-            
-            // 3. Create Firebase Credential
             let credential = GoogleAuthProvider.credential(withIDToken: idToken,
                                                            accessToken: accessToken)
             
-            // 4. Sign in to Firebase with that credential
+            // uses firebase auth route but credentials matched through GoogleSignIn
             Auth.auth().signIn(with: credential) { authResult, error in
                 if let error = error {
                     completion(error)
@@ -119,8 +114,6 @@ class AuthViewModel: ObservableObject {
                 guard let firebaseUser = authResult?.user else { return }
                 self?.currentUser = firebaseUser
                 
-                // 5. Check if we need to create a Firestore doc for this user
-                // (Useful if it's their first time logging in with Google)
                 let userRef = self?.db.collection("users").document(firebaseUser.uid)
                 userRef?.getDocument { snapshot, _ in
                     if let snapshot = snapshot, !snapshot.exists {
@@ -145,18 +138,18 @@ class AuthViewModel: ObservableObject {
     func signOut() {
         try? Auth.auth().signOut()
         self.currentUser = nil
-        self.locationDisplayName = "Cupertino, California" // Reset to default
+        self.userFullName = ""
+        self.locationDisplayName = "Cupertino, California" // might change default location
         self.locationCoordinate = nil
     }
     
     func saveLocation(name: String, coordinate: CLLocationCoordinate2D?) {
         guard let uid = currentUser?.uid else { return }
         
-        // 1. Update Local State
+        // local storage for the location object
         self.locationDisplayName = name
         self.locationCoordinate = coordinate
         
-        // 2. Prepare Data for Firestore
         var data: [String: Any] = [
             "locationName": name
         ]
@@ -166,7 +159,7 @@ class AuthViewModel: ObservableObject {
             data["locationLng"] = coord.longitude
         }
         
-        // 3. Write to Firestore
+        // write data and coord to firebase
         db.collection("users").document(uid).updateData(data) { error in
             if let error = error {
                 print("Error saving location: \(error.localizedDescription)")

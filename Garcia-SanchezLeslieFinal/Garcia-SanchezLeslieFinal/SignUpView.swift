@@ -9,8 +9,6 @@ import SwiftUI
 
 struct SignUpView: View {
     @EnvironmentObject var authVM: AuthViewModel
-    // Note: We don't need dismiss here since we are moving forward to InitLocation
-    // @Environment(\.dismiss) private var dismiss
     
     @State private var fullName = ""
     @State private var email = ""
@@ -18,7 +16,6 @@ struct SignUpView: View {
     @State private var isLoading = false
     @State private var errorMessage: String?
     
-    // 1. State to control navigation
     @State private var navigateToInitLocation = false
     
     var body: some View {
@@ -93,6 +90,7 @@ struct SignUpView: View {
             .padding(.horizontal, 32)
             .padding(.top, 20)
             
+            // Error Handling
             if let errorMessage = errorMessage {
                 Text(errorMessage)
                     .foregroundColor(.red)
@@ -123,22 +121,21 @@ struct SignUpView: View {
             .padding(.horizontal, 32)
             .padding(.top, 8)
             
-            Text("Already have an account?")
+            Text("Already have an account?") // not done, will add link to SignInView
                 .font(.system(size: 14))
                 .foregroundColor(.gray)
                 .padding(.top, 16)
                 .padding(.bottom, 40)
         }
-        // MARK: - Navigation Destination
-        // This MUST be attached to the ScrollView (or the outermost view inside `body`),
-        // NOT after the closing brace of `body`.
+        // MARK: - Go to InitView
         .navigationDestination(isPresented: $navigateToInitLocation) {
             InitLocationView()
                 .environmentObject(authVM)
                 .navigationBarBackButtonHidden(true) // Prevent going back to SignUp
         }
-    } // End of body
+    }
     
+    // MARK: Helper Create Account
     private func createAccount() {
         errorMessage = nil
         
@@ -154,15 +151,10 @@ struct SignUpView: View {
                 if let error = error {
                     errorMessage = error.localizedDescription
                 } else {
-                    // Success: Trigger navigation
-                    self.navigateToInitLocation = true
+                    self.navigateToInitLocation = true // Success -> Trigger navigation
                 }
             }
         }
     }
 }
 
-#Preview {
-    SignUpView()
-        .environmentObject(AuthViewModel())
-}

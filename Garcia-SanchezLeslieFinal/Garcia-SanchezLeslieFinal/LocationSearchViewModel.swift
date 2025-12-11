@@ -9,6 +9,7 @@ import SwiftUI
 import MapKit
 import Combine
 
+// This is to be upgraded to MapKit, GPT lead me astray here
 class LocationSearchViewModel: NSObject, ObservableObject, MKLocalSearchCompleterDelegate {
     @Published var searchQuery = ""
     @Published var suggestions: [MKLocalSearchCompletion] = []
@@ -57,7 +58,7 @@ class LocationSearchViewModel: NSObject, ObservableObject, MKLocalSearchComplete
             )
             
             DispatchQueue.main.async {
-                self.selectedCoordinate = coordinate   // <— REMEMBER IT
+                self.selectedCoordinate = coordinate   // <— adds to firebase
                 completion(region)
             }
         }

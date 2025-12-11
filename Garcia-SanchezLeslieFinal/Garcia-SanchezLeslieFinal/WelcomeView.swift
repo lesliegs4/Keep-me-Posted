@@ -43,9 +43,3 @@ struct WelcomeView : View {
         }
     }
 }
-
-
-#Preview {
-    WelcomeView()
-        .environmentObject(AuthViewModel())
-}

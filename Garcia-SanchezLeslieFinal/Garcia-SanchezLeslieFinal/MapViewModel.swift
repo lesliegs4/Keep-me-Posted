@@ -13,7 +13,7 @@ import Combine
 struct SavedLocation: Identifiable, Codable {
     @DocumentID var id: String?
     var name: String
-    var address: String? // Added this field
+    var address: String?
     var latitude: Double
     var longitude: Double
     var dateAdded: Date

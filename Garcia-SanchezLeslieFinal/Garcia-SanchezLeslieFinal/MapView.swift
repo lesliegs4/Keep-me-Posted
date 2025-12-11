@@ -13,14 +13,12 @@ struct MapView: View {
     @EnvironmentObject var authVM: AuthViewModel
     @StateObject private var mapVM = MapViewModel()
     @StateObject private var locationManager = LocationManager()
-    
-    // MARK: - Map State
+
+    // Initial Map State
     @State private var region = MKCoordinateRegion(
         center: CLLocationCoordinate2D(latitude: 37.7749, longitude: -122.4194),
         span: MKCoordinateSpan(latitudeDelta: 0.05, longitudeDelta: 0.05)
     )
-    
-    // MARK: - UI State
     @State private var showNameDialog = false
     @State private var newLocationName = ""
     @State private var isSheetExpanded = false
@@ -31,7 +29,7 @@ struct MapView: View {
     var body: some View {
         ZStack {
             
-            // 1. THE MAP (Base Layer)
+            // MARK: The MAP (Base Layer)
             Map(coordinateRegion: $region,
                 showsUserLocation: true,
                 annotationItems: mapVM.savedLocations) { location in
@@ -64,8 +62,7 @@ struct MapView: View {
                 }
             }
             
-            // 2. THE CENTER TARGET DOT
-            // Exact Center of ZStack (matches region.center)
+            // MARK: Target center blue dot
             ZStack {
                 Circle()
                     .fill(Color.blue.opacity(0.2))
@@ -81,13 +78,13 @@ struct MapView: View {
                     .fill(Color.blue)
                     .frame(width: 16, height: 16)
             }
-            .allowsHitTesting(false) // Allows zooming/panning UNDER the dot
+            .allowsHitTesting(false) // Allows zooming/panning UNDER the dot, thanks GPT
             
-            // 3. UI LAYOUT (Buttons & Sheet)
+            // MARK: UI Overlay Buttons & Sheet
             // Use a Vstack with a Spacer that allows touches through
             VStack(spacing: 0) {
                 Spacer()
-                    .allowsHitTesting(false) // CRITICAL: Lets touches pass to Map
+                    .allowsHitTesting(false) // Lets touches pass to Map
                 
                 // Floating Buttons
                 HStack {
@@ -135,10 +132,11 @@ struct MapView: View {
                 saveLocationWithAddress()
             }
         } message: {
-            Text("Create a pin at the center blue dot?")
+            Text("Create a pin at this location?")
         }
     }
     
+    // MARK: Geocoding
     // Helper to get address before saving
     private func saveLocationWithAddress() {
         let center = region.center

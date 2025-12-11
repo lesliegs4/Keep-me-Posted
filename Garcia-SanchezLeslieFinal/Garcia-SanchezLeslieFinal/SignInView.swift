@@ -22,8 +22,9 @@ struct SignInView : View {
     var body: some View {
         
         ScrollView {
+            // MARK: SignInView
             VStack(spacing: 24) {
-                Rectangle() // placeholder for logo or image
+                Rectangle() // placeholder for logo
                     .fill(Color.gray.opacity(0.15))
                     .frame(width:80, height: 80)
                     .cornerRadius(12)
@@ -82,7 +83,7 @@ struct SignInView : View {
                 
                 Button(action: signIn) {
                     if isLoading {
-                        ProgressView()
+                        ProgressView() // can't see progress view but possibly a consqeuence of simulator
                             .tint(.white)
                             .frame(maxWidth: .infinity)
                             .padding(.vertical, 16)
@@ -114,7 +115,7 @@ struct SignInView : View {
                                     if let error = error {
                                         errorMessage = error.localizedDescription
                                     } else {
-                                        // Success: Navigate to Home
+                                        // Success -> Navigate to Home
                                         navigateToHome = true
                                     }
                                 }
@@ -139,7 +140,7 @@ struct SignInView : View {
                         )
                     }
                     
-                    
+                    // Can't do Apple Sign in rn bc requires developer account, i'm not paying $99
                     Button(action: {}) {
                         HStack(spacing: 12) {
                             Image(systemName: "apple.logo")
@@ -207,9 +208,3 @@ struct SignInView : View {
             }
         }
 }
-
-#Preview {
-    SignInView()
-        .environmentObject(AuthViewModel())
-}
-

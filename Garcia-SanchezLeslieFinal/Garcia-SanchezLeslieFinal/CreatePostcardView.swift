@@ -13,14 +13,12 @@ struct CreatePostcardView: View {
     @EnvironmentObject var authVM: AuthViewModel
     @Environment(\.dismiss) var dismiss
     
-    // --- State Variables ---
-    
-    // Default Templates
+    // Just use diff colors as templates for now
     let templates: [PostcardTemplate] = [
-        PostcardTemplate(id: 1, name: "Classic Blue", borderColor: .blue, backgroundColor: Color.blue.opacity(0.1)),
-        PostcardTemplate(id: 2, name: "Nature Green", borderColor: .green, backgroundColor: Color.green.opacity(0.1)),
-        PostcardTemplate(id: 3, name: "Sunny Yellow", borderColor: .orange, backgroundColor: Color.yellow.opacity(0.1)),
-        PostcardTemplate(id: 4, name: "Elegant Pink", borderColor: .pink, backgroundColor: Color.pink.opacity(0.03))
+        PostcardTemplate(id: 1, name: "Blue", borderColor: .blue, backgroundColor: Color.blue.opacity(0.1)),
+        PostcardTemplate(id: 2, name: "Green", borderColor: .green, backgroundColor: Color.green.opacity(0.1)),
+        PostcardTemplate(id: 3, name: "Yellow", borderColor: .orange, backgroundColor: Color.yellow.opacity(0.1)),
+        PostcardTemplate(id: 4, name: "Pink", borderColor: .pink, backgroundColor: Color.pink.opacity(0.03))
     ]
     
     @State private var selectedTemplate: PostcardTemplate
@@ -41,7 +39,7 @@ struct CreatePostcardView: View {
         ScrollView {
             VStack(spacing: 24) {
                 
-                // MARK: - 1. Live Preview
+                // MARK: Live Preview
                 // We show the postcard card here so users see changes instantly
                 VStack(alignment: .leading, spacing: 8) {
                     Text("Preview")
